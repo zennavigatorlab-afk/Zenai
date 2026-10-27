@@ -32,6 +32,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'assistant', label: 'AI Assistant' },
     { id: 'privacy', label: 'Privacy' },
     { id: 'project_code', label: 'Android Code' },
+    { id: 'mobile_guide', label: 'Build APK on Phone' },
   ];
 
   return (

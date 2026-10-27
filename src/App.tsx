@@ -33,6 +33,7 @@ import { CallsView } from './components/views/CallsView';
 import { AssistantView } from './components/views/AssistantView';
 import { PrivacyView } from './components/views/PrivacyView';
 import { ProjectCodeView } from './components/views/ProjectCodeView';
+import { MobileGuideView } from './components/views/MobileGuideView';
 import { SimulatorControlsModal } from './components/SimulatorControlsModal';
 
 export default function App() {
@@ -332,6 +333,13 @@ export default function App() {
 
         {currentTab === 'project_code' && (
           <ProjectCodeView
+            onExportZip={handleExportZip}
+            isExporting={isExportingZip}
+          />
+        )}
+
+        {currentTab === 'mobile_guide' && (
+          <MobileGuideView
             onExportZip={handleExportZip}
             isExporting={isExportingZip}
           />

@@ -6,7 +6,8 @@ export type NavigationTab =
   | 'calls'
   | 'assistant'
   | 'privacy'
-  | 'project_code';
+  | 'project_code'
+  | 'mobile_guide';
 
 export interface DeviceStatus {
   batteryLevel: number;
