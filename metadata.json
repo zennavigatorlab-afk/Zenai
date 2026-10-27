@@ -1,0 +1,6 @@
+{
+  "name": "ZEN AI — Mobile Control Center",
+  "description": "Personal AI-powered Android mobile control center combining device status, app usage analytics, notification monitoring, social integrations, call log intelligence, and privacy-first local/cloud AI assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
