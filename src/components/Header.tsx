@@ -1,27 +1,34 @@
 import React from 'react';
-import { NavigationTab } from '../types';
+import { NavigationTab, SyncConnectionStatus } from '../types';
 import { 
   ShieldCheck, 
   Smartphone, 
   Download, 
-  SlidersHorizontal,
-  Code2
+  Code2,
+  RefreshCw,
+  Radio
 } from 'lucide-react';
 
 interface HeaderProps {
   currentTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
-  onOpenSimulator: () => void;
+  onOpenPairing: () => void;
   onExportProject: () => void;
   isExporting: boolean;
+  syncStatus: SyncConnectionStatus;
+  isSyncing: boolean;
+  onTriggerSync: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   currentTab,
   onSelectTab,
-  onOpenSimulator,
+  onOpenPairing,
   onExportProject,
   isExporting,
+  syncStatus,
+  isSyncing,
+  onTriggerSync,
 }) => {
   const tabs: { id: NavigationTab; label: string }[] = [
     { id: 'home', label: 'Home' },
@@ -34,6 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'project_code', label: 'Android Code' },
     { id: 'mobile_guide', label: 'Build APK on Phone' },
   ];
+
+  const isConnected = syncStatus === 'CONNECTED';
 
   return (
     <header className="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-slate-800/80 px-4 lg:px-8 py-3">
@@ -76,15 +85,30 @@ export const Header: React.FC<HeaderProps> = ({
           })}
         </nav>
 
-        {/* Zone 3: Primary Actions */}
+        {/* Zone 3: Primary Actions (Live Sync Status & Export) */}
         <div className="flex items-center gap-2.5 shrink-0">
           <button
-            onClick={onOpenSimulator}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-300 bg-slate-900 hover:bg-slate-800 border border-slate-700/80 rounded-lg transition-colors whitespace-nowrap shrink-0"
-            title="Simulate battery, incoming notifications, and permission changes"
+            onClick={onOpenPairing}
+            className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 border ${
+              isConnected
+                ? 'bg-emerald-950/40 text-emerald-300 border-emerald-800/60 hover:bg-emerald-900/50'
+                : 'bg-slate-900 text-slate-300 border-slate-700/80 hover:bg-slate-800'
+            }`}
+            title="Configure local phone-to-browser sync bridge"
           >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden sm:inline">Device Simulator</span>
+            <Radio className={`w-3.5 h-3.5 ${isConnected ? 'text-emerald-400' : 'text-amber-400'}`} />
+            <span className="hidden sm:inline">
+              {isConnected ? 'Phone Connected' : 'Pair Phone'}
+            </span>
+          </button>
+
+          <button
+            onClick={onTriggerSync}
+            disabled={isSyncing}
+            className="p-1.5 text-slate-400 hover:text-white bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-lg transition-colors disabled:opacity-50 shrink-0"
+            title="Refresh device telemetry"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin text-cyan-400' : ''}`} />
           </button>
 
           <button

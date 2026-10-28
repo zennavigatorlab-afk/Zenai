@@ -75,13 +75,15 @@ export const SimulatorControlsModal: React.FC<SimulatorControlsModalProps> = ({
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs text-slate-300">
                 <span>Battery Level:</span>
-                <span className="font-mono text-cyan-400 font-bold">{deviceStatus.batteryLevel}%</span>
+                <span className="font-mono text-cyan-400 font-bold">
+                  {deviceStatus.batteryLevel !== null ? `${deviceStatus.batteryLevel}%` : 'Unavailable'}
+                </span>
               </div>
               <input
                 type="range"
                 min="5"
                 max="100"
-                value={deviceStatus.batteryLevel}
+                value={deviceStatus.batteryLevel ?? 50}
                 onChange={(e) => onUpdateDeviceStatus({ batteryLevel: Number(e.target.value) })}
                 className="w-full accent-cyan-400 cursor-pointer"
               />
@@ -92,7 +94,7 @@ export const SimulatorControlsModal: React.FC<SimulatorControlsModalProps> = ({
               <button
                 onClick={() => onUpdateDeviceStatus({ isCharging: !deviceStatus.isCharging })}
                 className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                  deviceStatus.isCharging
+                  Boolean(deviceStatus.isCharging)
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
                     : 'bg-slate-800 text-slate-400'
                 }`}

@@ -6,265 +6,118 @@ import {
   CallRecord,
   PermissionStatus,
   PrivacySettings,
-  AuditLogEntry
+  AuditLogEntry,
+  BridgeConfig
 } from '../types';
 
-export const INITIAL_DEVICE_STATUS: DeviceStatus = {
-  batteryLevel: 78,
-  isCharging: false,
-  batteryHealth: 'Good',
-  temperatureC: 31.2,
-  availableStorageGB: 84.6,
-  totalStorageGB: 256.0,
-  manufacturer: 'Google',
-  model: 'Pixel 9 Pro',
-  androidVersion: 'Android 15',
-  apiLevel: 35,
-  networkType: 'Wi-Fi 6',
-  ipAddress: '192.168.1.142',
-  uptimeHours: 54,
-  securityPatchDate: 'October 5, 2026',
+/**
+ * Honest, zero-mock initial states.
+ * No hardcoded metrics, fake battery percentages, or demo chat transcripts.
+ * When unpaired, all fields remain null or empty with explicit 'UNPAIRED' state attribution.
+ */
+
+export const EMPTY_DEVICE_STATUS: DeviceStatus = {
+  batteryLevel: null,
+  isCharging: null,
+  batteryHealth: 'Unknown',
+  temperatureC: null,
+  availableStorageGB: null,
+  totalStorageGB: null,
+  manufacturer: null,
+  model: null,
+  androidVersion: null,
+  apiLevel: null,
+  networkType: 'Unknown',
+  ipAddress: null,
+  uptimeHours: null,
+  securityPatchDate: null,
+  source: 'UNPAIRED',
+  state: 'IDLE',
+  batterySource: 'Android BatteryManager (ACTION_BATTERY_CHANGED) / Browser Battery API',
+  storageSource: 'Android StatFs (/data partition)',
+  networkSource: 'Android ConnectivityManager / NetworkCapabilities',
+  deviceSource: 'Android Build.MANUFACTURER & Build.MODEL',
+  lastUpdated: null,
+  pairingMessage: 'Native Android APK not connected. Launch ZEN AI APK on this phone to stream live system telemetry.',
 };
 
-export const INITIAL_APPS: InstalledApp[] = [
-  {
-    id: 'whatsapp',
-    name: 'WhatsApp',
-    packageName: 'com.whatsapp',
-    category: 'Social',
-    version: '2.26.18.7',
-    installedDate: '2026-01-12',
-    usageTodayMinutes: 48,
-    lastUsedTimestamp: '12 minutes ago',
-    isLaunchable: true,
-    iconBg: '#25D366',
-    notificationsMuted: false,
-  },
-  {
-    id: 'telegram',
-    name: 'Telegram',
-    packageName: 'org.telegram.messenger',
-    category: 'Social',
-    version: '11.4.1',
-    installedDate: '2026-02-04',
-    usageTodayMinutes: 32,
-    lastUsedTimestamp: '25 minutes ago',
-    isLaunchable: true,
-    iconBg: '#229ED9',
-    notificationsMuted: false,
-  },
-  {
-    id: 'instagram',
-    name: 'Instagram',
-    packageName: 'com.instagram.android',
-    category: 'Social',
-    version: '352.0.0.31',
-    installedDate: '2026-01-20',
-    usageTodayMinutes: 54,
-    lastUsedTimestamp: '1 hour ago',
-    isLaunchable: true,
-    iconBg: '#E1306C',
-    notificationsMuted: false,
-  },
-  {
-    id: 'facebook',
-    name: 'Facebook',
-    packageName: 'com.facebook.katana',
-    category: 'Social',
-    version: '489.0.0.42',
-    installedDate: '2026-01-15',
-    usageTodayMinutes: 19,
-    lastUsedTimestamp: '3 hours ago',
-    isLaunchable: true,
-    iconBg: '#1877F2',
-    notificationsMuted: true,
-  },
-  {
-    id: 'chrome',
-    name: 'Google Chrome',
-    packageName: 'com.android.chrome',
-    category: 'Productivity',
-    version: '130.0.6723',
-    installedDate: 'Pre-installed',
-    usageTodayMinutes: 65,
-    lastUsedTimestamp: '4 minutes ago',
-    isLaunchable: true,
-    iconBg: '#EA4335',
-    notificationsMuted: false,
-  },
-  {
-    id: 'youtube',
-    name: 'YouTube',
-    packageName: 'com.google.android.youtube',
-    category: 'Entertainment',
-    version: '19.42.34',
-    installedDate: 'Pre-installed',
-    usageTodayMinutes: 72,
-    lastUsedTimestamp: '2 hours ago',
-    isLaunchable: true,
-    iconBg: '#FF0000',
-    notificationsMuted: false,
-  },
-  {
-    id: 'spotify',
-    name: 'Spotify',
-    packageName: 'com.spotify.music',
-    category: 'Entertainment',
-    version: '8.9.82',
-    installedDate: '2026-03-01',
-    usageTodayMinutes: 94,
-    lastUsedTimestamp: 'Playing now',
-    isLaunchable: true,
-    iconBg: '#1DB954',
-    notificationsMuted: false,
-  },
-  {
-    id: 'notion',
-    name: 'Notion',
-    packageName: 'notion.id',
-    category: 'Productivity',
-    version: '0.6.14',
-    installedDate: '2026-04-10',
-    usageTodayMinutes: 28,
-    lastUsedTimestamp: '40 minutes ago',
-    isLaunchable: true,
-    iconBg: '#000000',
-    notificationsMuted: false,
-  },
-  {
-    id: 'slack',
-    name: 'Slack',
-    packageName: 'com.Slack',
-    category: 'Productivity',
-    version: '24.10.20',
-    installedDate: '2026-02-18',
-    usageTodayMinutes: 41,
-    lastUsedTimestamp: '15 minutes ago',
-    isLaunchable: true,
-    iconBg: '#4A154B',
-    notificationsMuted: false,
-  },
-];
+export const EMPTY_APPS: InstalledApp[] = [];
+export const EMPTY_NOTIFICATIONS: MonitoredNotification[] = [];
+export const EMPTY_CALLS: CallRecord[] = [];
 
-export const INITIAL_NOTIFICATIONS: MonitoredNotification[] = [
-  {
-    id: 'notif-1',
-    packageName: 'com.whatsapp',
-    appName: 'WhatsApp',
-    title: 'Liam Vance (Project Sync)',
-    textPreview: 'Have you reviewed the updated Android Jetpack Compose pull request?',
-    timestamp: '8 minutes ago',
-    isSensitive: false,
-    isGrouped: false,
-    category: 'Social',
-  },
-  {
-    id: 'notif-2',
-    packageName: 'org.telegram.messenger',
-    appName: 'Telegram',
-    title: 'Security Alert: Login Code',
-    textPreview: 'Your login code is 849201. Never share this code with anyone.',
-    timestamp: '22 minutes ago',
-    isSensitive: true,
-    isGrouped: false,
-    category: 'Security',
-  },
-  {
-    id: 'notif-3',
-    packageName: 'com.instagram.android',
-    appName: 'Instagram',
-    title: 'alex.design shared a reel',
-    textPreview: 'Interactive Material 3 Micro-interactions for Mobile Developers',
-    timestamp: '45 minutes ago',
-    isSensitive: false,
-    isGrouped: false,
-    category: 'Social',
-  },
-  {
-    id: 'notif-4',
-    packageName: 'com.whatsapp',
-    appName: 'WhatsApp',
-    title: 'Family Group (4 messages)',
-    textPreview: 'Dinner plan confirmed for 7:30 PM this Friday.',
-    timestamp: '1 hour ago',
-    isSensitive: false,
-    isGrouped: true,
-    category: 'Social',
-  },
-  {
-    id: 'notif-5',
-    packageName: 'com.facebook.katana',
-    appName: 'Facebook',
-    title: 'Android Developers Community',
-    textPreview: 'Sarah Miller posted an update in Kotlin Multiplatform Group.',
-    timestamp: '3 hours ago',
-    isSensitive: false,
-    isGrouped: false,
-    category: 'Social',
-  },
-];
+export const DEFAULT_PERMISSIONS: PermissionStatus = {
+  notificationAccess: false,
+  usageAccess: false,
+  callLogAccess: false,
+  batteryOptimizationIgnored: false,
+  storageAccess: false,
+};
 
-export const INITIAL_SOCIAL_INTEGRATIONS: SocialIntegration[] = [
+export const DEFAULT_PRIVACY_SETTINGS: PrivacySettings = {
+  dataRetentionDays: 14,
+  maskSensitiveNotifications: true,
+  aggregateOnlyAiMode: true,
+  enableLocalAuditLog: true,
+  allowOnlineAiProcessing: false,
+};
+
+export const DEFAULT_SOCIAL_INTEGRATIONS: SocialIntegration[] = [
   {
     id: 'whatsapp',
     displayName: 'WhatsApp',
     packageName: 'com.whatsapp',
-    isConnected: true,
+    isConnected: false,
     authMethod: 'Notification Hook Only',
     supportedFeatures: [
-      'Authorized Notification Previews',
-      'Sender Classification',
-      'Unread Noise Filtering',
-      'App Launch Shortcut',
+      'Local notification header parsing',
+      'OTP & verification code regex masking',
+      'Sender name attribution',
+      'Per-app alert muting'
     ],
     unavailableFeatures: [
-      'Full End-to-End Chat History (Cryptographically isolated in app sandbox)',
-      'Direct Silent Message Sending (Requires user interaction via Intent)',
-      'Contact Phonebook Extraction',
+      'Direct chat message extraction (requires WhatsApp Cloud API)',
+      'Background contact sync',
+      'End-to-end encrypted payload decryption'
     ],
-    securityNote: 'Personal WhatsApp chats are end-to-end encrypted and isolated by Android user sandboxes. ZEN AI accesses only alerts presented via authorized NotificationListenerService.',
-    lastSyncTimestamp: 'Just now',
-    monitoredNotificationCount: 14,
-    connectionState: 'connected',
+    securityNote: 'ZEN AI adheres to Android sandboxing. WhatsApp messages are never intercepted without Notification Listener permission.',
+    monitoredNotificationCount: 0,
+    connectionState: 'disconnected',
   },
   {
     id: 'telegram',
     displayName: 'Telegram',
     packageName: 'org.telegram.messenger',
-    isConnected: true,
-    authMethod: 'Telegram Bot API / MTProto',
+    isConnected: false,
+    authMethod: 'Notification Hook Only',
     supportedFeatures: [
-      'Notification Listener Previews',
-      'Authorized Bot Notification Relays',
-      'Channel Broadcast Tracking via Bot API',
-      'Direct Intent Deep-linking',
+      'Channel notification monitoring',
+      'Group message count aggregation',
+      'Sender handle redaction'
     ],
     unavailableFeatures: [
-      'Silent TDLib Client Session Ingestion (Never safe to upload session auth keys)',
-      'Secret Chat Decryption (Device-bound ephemeral encryption)',
+      'Secret chats decryption',
+      'Media stream interception'
     ],
-    securityNote: 'Bot API connects directly to authorized Telegram Bot tokens. ZEN AI strictly avoids requesting personal TDLib .session authentication keys.',
-    lastSyncTimestamp: '4 minutes ago',
-    monitoredNotificationCount: 8,
-    connectionState: 'connected',
+    securityNote: 'Telegram notifications are processed in-memory and sanitized before writing to local Room database.',
+    monitoredNotificationCount: 0,
+    connectionState: 'disconnected',
   },
   {
     id: 'instagram',
     displayName: 'Instagram',
     packageName: 'com.instagram.android',
     isConnected: false,
-    authMethod: 'OAuth 2.0 (Meta Graph)',
+    authMethod: 'Notification Hook Only',
     supportedFeatures: [
-      'Notification Preview Monitoring',
-      'Professional Account Insights (Via Meta Graph OAuth)',
-      'Media Publishing Webhooks (Business/Creator only)',
+      'Direct Message arrival alerts',
+      'Activity notification counter'
     ],
     unavailableFeatures: [
-      'Personal Consumer Direct Messages (Meta restricts private DM API access)',
-      'Private Story / Close Friends Stream Scraping',
+      'Direct inbox reading (requires Instagram Graph API business verification)',
+      'Story viewer analytics'
     ],
-    securityNote: 'Consumer Instagram accounts cannot expose personal Direct Messages to third-party apps via public Meta APIs without Meta App Review & Business verification.',
-    monitoredNotificationCount: 5,
+    securityNote: 'Zero token storage. Instagram notifications are sanitized locally.',
+    monitoredNotificationCount: 0,
     connectionState: 'disconnected',
   },
   {
@@ -272,101 +125,44 @@ export const INITIAL_SOCIAL_INTEGRATIONS: SocialIntegration[] = [
     displayName: 'Facebook',
     packageName: 'com.facebook.katana',
     isConnected: false,
-    authMethod: 'OAuth 2.0 (Meta Graph)',
+    authMethod: 'Notification Hook Only',
     supportedFeatures: [
-      'Notification Alert Aggregation',
-      'Managed Page Insights (Meta Graph with pages_read_engagement)',
-      'App Package Launching',
+      'Notification badge tracking',
+      'System alert filtering'
     ],
     unavailableFeatures: [
-      'Personal News Feed Scraping (Violates Meta Platform Terms)',
-      'Private Messenger Inbox Retrieval',
+      'Feed interception',
+      'Private messenger content reading'
     ],
-    securityNote: 'Standard Android apps are prohibited from scraping personal Facebook feeds or reading private Messenger threads. Requires explicit Meta Graph permissions.',
-    monitoredNotificationCount: 2,
+    securityNote: 'No Meta Graph OAuth tokens requested or stored.',
+    monitoredNotificationCount: 0,
     connectionState: 'disconnected',
   },
 ];
 
-export const INITIAL_CALLS: CallRecord[] = [
-  {
-    id: 'call-1',
-    callerName: 'Elena Rostova',
-    phoneNumberMasked: '+1 (415) •••-8392',
-    callType: 'incoming',
-    timestamp: 'Today, 11:20 AM',
-    durationSeconds: 312,
-  },
-  {
-    id: 'call-2',
-    callerName: 'Unknown Caller',
-    phoneNumberMasked: '+1 (800) •••-4100',
-    callType: 'missed',
-    timestamp: 'Today, 09:45 AM',
-    durationSeconds: 0,
-  },
-  {
-    id: 'call-3',
-    callerName: 'Dr. Marcus Vance',
-    phoneNumberMasked: '+1 (415) •••-1120',
-    callType: 'outgoing',
-    timestamp: 'Yesterday, 04:15 PM',
-    durationSeconds: 145,
-  },
-  {
-    id: 'call-4',
-    callerName: 'David Chen',
-    phoneNumberMasked: '+1 (650) •••-9481',
-    callType: 'incoming',
-    timestamp: 'Yesterday, 01:05 PM',
-    durationSeconds: 480,
-  },
-  {
-    id: 'call-5',
-    callerName: 'Courier Delivery',
-    phoneNumberMasked: '+1 (888) •••-2001',
-    callType: 'missed',
-    timestamp: 'Oct 18, 02:30 PM',
-    durationSeconds: 0,
-  },
-];
-
-export const INITIAL_PERMISSIONS: PermissionStatus = {
-  notificationAccess: true,
-  usageAccess: true,
-  callLogAccess: true,
-  batteryOptimizationIgnored: true,
-  storageAccess: true,
-};
-
-export const INITIAL_PRIVACY_SETTINGS: PrivacySettings = {
-  dataRetentionDays: 14,
-  maskSensitiveNotifications: true,
-  aggregateOnlyAiMode: true,
-  enableLocalAuditLog: true,
-  allowOnlineAiProcessing: true,
+export const DEFAULT_BRIDGE_CONFIG: BridgeConfig = {
+  host: '127.0.0.1',
+  port: 8080,
+  token: '',
+  autoSync: true,
+  pollIntervalMs: 3000,
 };
 
 export const INITIAL_AUDIT_LOGS: AuditLogEntry[] = [
   {
-    id: 'log-1',
-    timestamp: '10:45 AM',
-    category: 'NOTIFICATION_FILTER',
-    action: 'Sensitive OTP Redaction',
-    details: 'Masked 6-digit verification code from Telegram preview buffer.',
-  },
-  {
-    id: 'log-2',
-    timestamp: '09:15 AM',
-    category: 'AI_QUERY',
-    action: 'Local Intelligence Query',
-    details: 'Answered "What is my battery level?" using deterministic local rule engine.',
-  },
-  {
-    id: 'log-3',
-    timestamp: '08:00 AM',
-    category: 'PERMISSION',
-    action: 'Usage Stats Synchronized',
-    details: 'Refreshed 24-hour foreground screen time breakdown via UsageStatsManager.',
+    id: 'init-1',
+    timestamp: 'Initial System Setup',
+    category: 'INTEGRATION',
+    action: 'Zero-Fake Telemetry Active',
+    details: 'Initialized honest telemetry pipeline. Waiting for genuine Android phone sync.',
   },
 ];
+
+// Backwards compatibility aliases
+export const INITIAL_DEVICE_STATUS = EMPTY_DEVICE_STATUS;
+export const INITIAL_APPS = EMPTY_APPS;
+export const INITIAL_NOTIFICATIONS = EMPTY_NOTIFICATIONS;
+export const INITIAL_SOCIAL_INTEGRATIONS = DEFAULT_SOCIAL_INTEGRATIONS;
+export const INITIAL_CALLS = EMPTY_CALLS;
+export const INITIAL_PERMISSIONS = DEFAULT_PERMISSIONS;
+export const INITIAL_PRIVACY_SETTINGS = DEFAULT_PRIVACY_SETTINGS;

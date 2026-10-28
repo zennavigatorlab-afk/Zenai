@@ -9,21 +9,59 @@ export type NavigationTab =
   | 'project_code'
   | 'mobile_guide';
 
+export type MetricState = 
+  | 'IDLE' 
+  | 'LOADING' 
+  | 'AVAILABLE' 
+  | 'PERMISSION_REQUIRED' 
+  | 'UNSUPPORTED' 
+  | 'UNAVAILABLE' 
+  | 'ERROR';
+
+export type MetricSource = 
+  | 'NATIVE_ANDROID' 
+  | 'BROWSER_API' 
+  | 'UNPAIRED';
+
+export type SyncConnectionStatus = 
+  | 'DISCONNECTED' 
+  | 'SEARCHING' 
+  | 'CONNECTED' 
+  | 'ERROR';
+
+export interface BridgeConfig {
+  host: string;
+  port: number;
+  token: string;
+  autoSync: boolean;
+  pollIntervalMs: number;
+}
+
 export interface DeviceStatus {
-  batteryLevel: number;
-  isCharging: boolean;
-  batteryHealth: 'Good' | 'Fair' | 'Replace Soon';
-  temperatureC: number;
-  availableStorageGB: number;
-  totalStorageGB: number;
-  manufacturer: string;
-  model: string;
-  androidVersion: string;
-  apiLevel: number;
-  networkType: 'Wi-Fi 6' | '5G' | 'LTE' | 'Offline';
-  ipAddress: string;
-  uptimeHours: number;
-  securityPatchDate: string;
+  batteryLevel: number | null;
+  isCharging: boolean | null;
+  batteryHealth: 'Good' | 'Fair' | 'Replace Soon' | 'Unknown';
+  temperatureC: number | null;
+  availableStorageGB: number | null;
+  totalStorageGB: number | null;
+  manufacturer: string | null;
+  model: string | null;
+  androidVersion: string | null;
+  apiLevel: number | null;
+  networkType: 'Wi-Fi 6' | 'Wi-Fi' | '5G' | 'LTE' | 'Cellular' | 'Ethernet' | 'Offline' | 'Unknown';
+  ipAddress: string | null;
+  uptimeHours: number | null;
+  securityPatchDate: string | null;
+  
+  // Real sensor state attribution
+  source: MetricSource;
+  state: MetricState;
+  batterySource?: string;
+  storageSource?: string;
+  networkSource?: string;
+  deviceSource?: string;
+  lastUpdated?: string | null;
+  pairingMessage?: string;
 }
 
 export interface InstalledApp {

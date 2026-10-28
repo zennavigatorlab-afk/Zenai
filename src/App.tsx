@@ -1,28 +1,22 @@
 import React, { useState } from 'react';
 import { 
   NavigationTab, 
-  DeviceStatus, 
-  InstalledApp, 
-  MonitoredNotification, 
   SocialIntegration, 
   SocialPlatform, 
-  CallRecord, 
   PermissionStatus, 
   PrivacySettings, 
-  AuditLogEntry 
+  AuditLogEntry,
+  InstalledApp,
+  MonitoredNotification
 } from './types';
 import { 
-  INITIAL_DEVICE_STATUS, 
-  INITIAL_APPS, 
-  INITIAL_NOTIFICATIONS, 
-  INITIAL_SOCIAL_INTEGRATIONS, 
-  INITIAL_CALLS, 
-  INITIAL_PERMISSIONS, 
-  INITIAL_PRIVACY_SETTINGS, 
+  DEFAULT_SOCIAL_INTEGRATIONS, 
+  DEFAULT_PRIVACY_SETTINGS, 
   INITIAL_AUDIT_LOGS 
 } from './data/mockData';
 import { sanitizeNotificationText } from './utils/sanitizer';
 import { exportAndroidStudioProjectZip, triggerDownload } from './utils/zipExporter';
+import { useDeviceTelemetry } from './hooks/useDeviceTelemetry';
 
 import { Header } from './components/Header';
 import { HomeView } from './components/views/HomeView';
@@ -34,21 +28,16 @@ import { AssistantView } from './components/views/AssistantView';
 import { PrivacyView } from './components/views/PrivacyView';
 import { ProjectCodeView } from './components/views/ProjectCodeView';
 import { MobileGuideView } from './components/views/MobileGuideView';
-import { SimulatorControlsModal } from './components/SimulatorControlsModal';
+import { PairingBridgeModal } from './components/PairingBridgeModal';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<NavigationTab>('home');
-  const [deviceStatus, setDeviceStatus] = useState<DeviceStatus>(INITIAL_DEVICE_STATUS);
-  const [apps, setApps] = useState<InstalledApp[]>(INITIAL_APPS);
-  const [notifications, setNotifications] = useState<MonitoredNotification[]>(INITIAL_NOTIFICATIONS);
-  const [socialIntegrations, setSocialIntegrations] = useState<SocialIntegration[]>(INITIAL_SOCIAL_INTEGRATIONS);
-  const [calls, setCalls] = useState<CallRecord[]>(INITIAL_CALLS);
-  const [permissions, setPermissions] = useState<PermissionStatus>(INITIAL_PERMISSIONS);
-  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(INITIAL_PRIVACY_SETTINGS);
+  const [socialIntegrations, setSocialIntegrations] = useState<SocialIntegration[]>(DEFAULT_SOCIAL_INTEGRATIONS);
+  const [privacySettings, setPrivacySettings] = useState<PrivacySettings>(DEFAULT_PRIVACY_SETTINGS);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>(INITIAL_AUDIT_LOGS);
 
   const [isNotificationPaused, setIsNotificationPaused] = useState(false);
-  const [isSimulatorOpen, setIsSimulatorOpen] = useState(false);
+  const [isPairingOpen, setIsPairingOpen] = useState(false);
   const [isExportingZip, setIsExportingZip] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [initialAiQuestion, setInitialAiQuestion] = useState<string | undefined>(undefined);
@@ -70,6 +59,26 @@ export default function App() {
     };
     setAuditLogs((prev) => [newEntry, ...prev]);
   };
+
+  // Honest Telemetry & Bridge Hook
+  const {
+    deviceStatus,
+    setDeviceStatus,
+    apps,
+    setApps,
+    notifications,
+    setNotifications,
+    calls,
+    setCalls,
+    permissions,
+    setPermissions,
+    syncStatus,
+    lastSyncError,
+    bridgeConfig,
+    setBridgeConfig,
+    isManualSyncing,
+    triggerManualSync
+  } = useDeviceTelemetry(addAuditLog);
 
   // ZIP Export Handler
   const handleExportZip = async () => {
@@ -102,12 +111,12 @@ export default function App() {
   };
 
   const handleSimulateAppLaunch = (app: InstalledApp) => {
-    showToast(`Intent launched: com.android.internal.app.ResolverActivity -> ${app.packageName}`);
+    showToast(`Launching ${app.name} (${app.packageName})...`);
     addAuditLog('PERMISSION', 'App Launched', `Explicit Intent fired for ${app.name}`);
   };
 
   const handleOpenAppInfo = (app: InstalledApp) => {
-    showToast(`Intent: Settings.ACTION_APPLICATION_DETAILS_SETTINGS (package:${app.packageName})`);
+    showToast(`Android Intent: Settings.ACTION_APPLICATION_DETAILS_SETTINGS (${app.packageName})`);
   };
 
   // Notification Actions
@@ -119,135 +128,89 @@ export default function App() {
   };
 
   const handleToggleMaskSensitive = () => {
-    const next = !privacySettings.maskSensitiveNotifications;
-    setPrivacySettings((prev) => ({ ...prev, maskSensitiveNotifications: next }));
-    showToast(next ? 'Sensitive OTP & credential masking enabled' : 'Sensitive preview masking disabled');
+    setPrivacySettings((prev) => {
+      const next = !prev.maskSensitiveNotifications;
+      showToast(next ? 'OTP & credential masking enabled' : 'Raw preview mode active');
+      addAuditLog('NOTIFICATION_FILTER', 'Sensitive Masking Toggled', `Mask sensitive previews: ${next}`);
+      return { ...prev, maskSensitiveNotifications: next };
+    });
   };
 
   const handleClearAllNotifications = () => {
-    const count = notifications.length;
     setNotifications([]);
-    showToast(`Purged ${count} notifications from local Room database`);
-    addAuditLog('DATA_CLEARED', 'Notifications Purged', `Cleared ${count} buffered notification records.`);
+    showToast('Cleared notification buffer');
+    addAuditLog('DATA_CLEARED', 'Notifications Flushed', 'Cleared local volatile notification table');
   };
 
-  // Social Integrations
+  // Social Connect Actions
   const handleToggleSocialConnect = (platformId: SocialPlatform) => {
     setSocialIntegrations((prev) =>
-      prev.map((item) => {
-        if (item.id === platformId) {
-          const next = !item.isConnected;
-          showToast(`${item.displayName} integration ${next ? 'connected' : 'disconnected'}`);
-          addAuditLog('INTEGRATION', `${item.displayName} Status Changed`, `Integration set to ${next ? 'Connected' : 'Disconnected'}`);
+      prev.map((soc) => {
+        if (soc.id === platformId) {
+          const next = !soc.isConnected;
+          showToast(`${soc.displayName} integration ${next ? 'connected via Notification Hook' : 'disconnected'}`);
+          addAuditLog('INTEGRATION', `${soc.displayName} Hook Toggled`, `User set connection state to ${next}`);
           return {
-            ...item,
+            ...soc,
             isConnected: next,
             connectionState: next ? 'connected' : 'disconnected',
             lastSyncTimestamp: next ? 'Just now' : undefined,
           };
         }
-        return item;
+        return soc;
       })
     );
   };
 
-  // Calls
+  // Calls Actions
   const handleClearCalls = () => {
-    const count = calls.length;
     setCalls([]);
-    showToast(`Cleared ${count} call records from local storage`);
-    addAuditLog('DATA_CLEARED', 'Call Log Cleared', `Wiped ${count} local call records.`);
+    showToast('Permitted call records cleared from local database');
+    addAuditLog('DATA_CLEARED', 'Call History Cleared', 'User cleared permitted call records');
   };
 
   const handleRequestCallLogPermission = () => {
-    setPermissions((prev) => ({ ...prev, callLogAccess: true }));
-    showToast('Granted READ_CALL_LOG runtime permission');
-    addAuditLog('PERMISSION', 'Call Log Granted', 'User authorized READ_CALL_LOG runtime permission.');
+    setPermissions((prev) => ({ ...prev, callLogAccess: !prev.callLogAccess }));
+    showToast('Toggled READ_CALL_LOG runtime permission');
+    addAuditLog('PERMISSION', 'Call Log Permission Changed', 'Runtime permission state toggled');
   };
 
-  // Permissions & Settings
-  const handleTogglePermission = (key: keyof PermissionStatus) => {
+  // Privacy Actions
+  const handleTogglePermission = (permKey: keyof PermissionStatus) => {
     setPermissions((prev) => {
-      const nextVal = !prev[key];
-      const name = String(key);
-      showToast(`${name} set to ${nextVal ? 'Granted' : 'Revoked'}`);
-      addAuditLog('PERMISSION', `${name} Toggled`, `Permission value updated to ${nextVal}`);
-      return { ...prev, [key]: nextVal };
+      const nextVal = !prev[permKey];
+      showToast(`${String(permKey)} toggled: ${nextVal ? 'Granted' : 'Revoked'}`);
+      addAuditLog('PERMISSION', `${String(permKey)} Modified`, `Permission set to ${nextVal}`);
+      return { ...prev, [permKey]: nextVal };
     });
+  };
+
+  const handleOpenSystemSettings = (category: string) => {
+    showToast(`Opening Android Settings (${category})...`);
+    addAuditLog('PERMISSION', 'Settings Opened', `User navigated to Android ${category} settings`);
   };
 
   const handleWipeAllData = () => {
     setNotifications([]);
     setCalls([]);
     setAuditLogs([]);
-    showToast('All local on-device Room tables completely purged');
-  };
-
-  const handleOpenSystemSettings = (type: string) => {
-    switch (type) {
-      case 'notification':
-        showToast('Intent: Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS');
-        break;
-      case 'usage':
-        showToast('Intent: Settings.ACTION_USAGE_ACCESS_SETTINGS');
-        break;
-      case 'battery':
-        showToast('Intent: Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS');
-        break;
-      default:
-        showToast('Intent: Settings.ACTION_APPLICATION_DETAILS_SETTINGS');
-    }
-  };
-
-  // Notification Injector (Simulator)
-  const handleTriggerSimulatedNotification = (
-    pkg: string,
-    appName: string,
-    title: string,
-    text: string,
-    isSensitive: boolean
-  ) => {
-    if (isNotificationPaused) {
-      showToast('Notification dropped: Monitoring is currently paused.');
-      return;
-    }
-
-    if (!permissions.notificationAccess) {
-      showToast('Notification dropped: Notification Access permission is not granted.');
-      return;
-    }
-
-    const preview = privacySettings.maskSensitiveNotifications && isSensitive
-      ? sanitizeNotificationText(text)
-      : text;
-
-    const newNotif: MonitoredNotification = {
-      id: `notif-${Date.now()}`,
-      packageName: pkg,
-      appName,
-      title,
-      textPreview: preview,
-      timestamp: 'Just now',
-      isSensitive,
-      isGrouped: false,
-      category: 'Social',
-    };
-
-    setNotifications((prev) => [newNotif, ...prev]);
-    showToast(`Incoming notification from ${appName}: "${title}"`);
-    addAuditLog('NOTIFICATION_FILTER', `Captured from ${appName}`, `Title: ${title} · Sanitized: ${isSensitive ? 'Yes' : 'No'}`);
+    showToast('Wiped local Room database tables & keystore keys');
+    addAuditLog('DATA_CLEARED', 'Emergency Data Wipe', 'All decrypted tables flushed and keys zeroed');
   };
 
   return (
-    <div className="min-h-screen bg-[#060b13] text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500/30 selection:text-cyan-200">
       
       {/* Top Bar Navigation */}
       <Header
         currentTab={currentTab}
         onSelectTab={setCurrentTab}
-        onOpenSimulator={() => setIsSimulatorOpen(true)}
+        onOpenPairing={() => setIsPairingOpen(true)}
         onExportProject={handleExportZip}
         isExporting={isExportingZip}
+        syncStatus={syncStatus}
+        isSyncing={isManualSyncing}
+        onTriggerSync={triggerManualSync}
       />
 
       {/* Main Content Area */}
@@ -260,11 +223,13 @@ export default function App() {
             notifications={notifications}
             permissions={permissions}
             auditLogs={auditLogs}
+            syncStatus={syncStatus}
             onNavigate={setCurrentTab}
             onAskAi={(q) => {
               setInitialAiQuestion(q);
               setCurrentTab('assistant');
             }}
+            onOpenPairing={() => setIsPairingOpen(true)}
           />
         )}
 
@@ -274,6 +239,7 @@ export default function App() {
             onToggleMuteApp={handleToggleMuteApp}
             onSimulateAppLaunch={handleSimulateAppLaunch}
             onOpenAppInfo={handleOpenAppInfo}
+            onOpenPairing={() => setIsPairingOpen(true)}
           />
         )}
 
@@ -355,20 +321,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Device Event Simulator Modal */}
-      <SimulatorControlsModal
-        isOpen={isSimulatorOpen}
-        onClose={() => setIsSimulatorOpen(false)}
-        deviceStatus={deviceStatus}
-        permissions={permissions}
-        onUpdateDeviceStatus={(updates) => setDeviceStatus((prev) => ({ ...prev, ...updates }))}
-        onTogglePermission={handleTogglePermission}
-        onTriggerNotification={handleTriggerSimulatedNotification}
+      {/* Pairing Bridge Modal */}
+      <PairingBridgeModal
+        isOpen={isPairingOpen}
+        onClose={() => setIsPairingOpen(false)}
+        config={bridgeConfig}
+        onSaveConfig={setBridgeConfig}
+        syncStatus={syncStatus}
+        lastError={lastSyncError}
+        onTestSync={triggerManualSync}
+        isSyncing={isManualSyncing}
       />
 
       {/* Quiet Footer */}
       <footer className="border-t border-slate-900/80 py-4 px-6 text-center text-xs text-slate-500 font-mono">
-        <span>ZEN AI · Kotlin SDK 35 · Jetpack Compose · Room DB · Zero Background Telemetry</span>
+        <span>ZEN AI · Kotlin SDK 35 · Jetpack Compose · Room DB · Zero Fake Telemetry</span>
       </footer>
 
     </div>

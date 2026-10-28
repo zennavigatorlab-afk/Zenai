@@ -140,9 +140,9 @@ export const AssistantView: React.FC<AssistantViewProps> = ({
         const payload = {
           prompt: textToSend,
           deviceContext: {
-            batteryLevel: `${deviceStatus.batteryLevel}%`,
-            chargingState: deviceStatus.isCharging ? 'Charging' : 'Discharging',
-            availableStorageGB: `${deviceStatus.availableStorageGB} GB`,
+            batteryLevel: deviceStatus.batteryLevel !== null ? `${deviceStatus.batteryLevel}%` : 'Unavailable',
+            chargingState: deviceStatus.isCharging !== null ? (deviceStatus.isCharging ? 'Charging' : 'Discharging') : 'Unknown',
+            availableStorageGB: deviceStatus.availableStorageGB !== null ? `${deviceStatus.availableStorageGB} GB` : 'Unavailable (Requires Native APK)',
             topAppsByUsage: apps.slice(0, 5).map((a) => ({ name: a.name, minutes: a.usageTodayMinutes })),
             notificationSummary: {
               totalLast24h: notifications.length,
